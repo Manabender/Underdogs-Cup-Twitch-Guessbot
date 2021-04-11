@@ -1,0 +1,2 @@
+node twitchbot.js
+pause
