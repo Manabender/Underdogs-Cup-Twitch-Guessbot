@@ -65,7 +65,6 @@ function onMessageHandler(target, context, msg, self)
 		var ans = commandName.substring(6).trim().substring(0,1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
 		if (listeningForGuesses)
 		{
-
 			guesses[guesser] = ans;
 			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\t').concat(ans).concat('\n'), (err) =>
 			{
@@ -78,7 +77,6 @@ function onMessageHandler(target, context, msg, self)
 		{
 			console.log('> '.concat(guesser).concat(' tried to guess ').concat(ans).concat(' but guessing isn\'t open right now'));
 		}
-
 	}
 
 	else if (commandName.substring(0, 6) === '!score')
@@ -112,6 +110,25 @@ function onMessageHandler(target, context, msg, self)
 		{
 			clearTimeout(scoreTimeoutFunc);
 			batchPostScores();
+		}
+	}
+
+	else if (commandName.substring(0, 8) === '!unguess')
+	{
+		var guesser = context['username'];
+		if (listeningForGuesses)
+		{
+			guesses[guesser] = "";
+			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\tcancel guess\n'), (err) =>
+			{
+				if (err) throw err;
+				console.log('> '.concat(guesser).concat(' unguessed '));
+			});
+			lineNumber++;
+		}
+		else
+		{
+			console.log('> '.concat(guesser).concat(' tried to unguess ').concat(ans).concat(' but guessing isn\'t open right now'));
 		}
 	}
 
@@ -224,7 +241,7 @@ function onMessageHandler(target, context, msg, self)
 				scores[player]['score'] += bonus;
 				scores[player]['streak']++;
 			}
-			else
+			else if (guess != '') //An empty guess is either an incorrectly-entered guess or a retracted guess. In either case, do not break their streak.
 			{
 				scores[player]['streak'] = 0;
 			}
