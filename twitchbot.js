@@ -257,14 +257,21 @@ function onMessageHandler(target, context, msg, self)
 	else if (commandName.substring(0, 6) === '!final' && hasElevatedPermissions(context['username']))
 	{
 		postFinal = true;
-		var ans = commandName.substring(7, 8);
-		client.action(CHAT_CHANNEL, 'Final answer is '.concat(ans).concat(' for round number ').concat(roundNumber).concat('.'));
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED FOR ROUND ').concat(roundNumber).concat(': CORRECT ANSWER WAS ').concat(ans).concat('\n'), (err) =>
+		var arg = commandName.substring(7).trim();
+		client.action(CHAT_CHANNEL, 'Final answer is '.concat(arg).concat(' for round number ').concat(roundNumber).concat('.'));
+		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED FOR ROUND ').concat(roundNumber).concat(': CORRECT ANSWER WAS ').concat(arg).concat('\n'), (err) =>
 		{
 			if (err) throw err;
-			console.log('> Final answer logged as '.concat(ans));
+			console.log('> Final answer logged as '.concat(arg));
 		});
 		lineNumber++;
+		//Process argument into several correct answers.
+		var answers = [];
+		for (var i = 0; i < arg.length; i++)
+		{
+			answers.push(arg.substring(i, i + 1));
+		}
+		console.log(answers);
 		//Process scores
 		var correctAnswers = 0;
 		var totalAnswers = 0;
@@ -278,7 +285,7 @@ function onMessageHandler(target, context, msg, self)
 				scores[player]['streak'] = 0;
 			}
 			//Did the player get it right?
-			if (guess == ans || ans == '*')
+			if (answers.indexOf(guess) != -1 || arg == '*')
 			{
 				scores[player]['score'] += basePoints;
 				const bonus = streakBonus * scores[player]['streak'];
