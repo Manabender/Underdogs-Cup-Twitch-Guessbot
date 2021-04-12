@@ -12,12 +12,12 @@ fs.readFile('credentials.txt', (err, data) => { if (err) throw err; credentials 
 // Constants and variables
 const BOT_CONTROLLER = 'Manabender'; //Some commands only work when the bot controller issues them.
 var addedControllers = ['caboozled']; //Array of people allowed to run elevated commands.
-const BASE_POINTS = 1000; //The base number of points for a correct guess.
-const STREAK_BONUS = 100; //The number of bonus points scored on a correct guess for each previous consecutive correct guess.
 const MAX_SCORE_REQUESTS = 6; //The maximum number of !score requests that can be posted in a single message. This was determined experimentally with a 25 character username, 5 character score, and 2 character streak.
 const SCORE_REQUEST_BATCH_WAIT = 5000; //The amount of time (in milliseconds) to wait after a !score request to batch-post them.
 const LEADERS_COOLDOWN_WAIT = 15000; //The amount of time (in milliseconds) for which the bot will ignore further !leaders commands. Used in order to keep things less spammy.
 const INITIAL_TIMESTAMP = Date.now(); //A UNIX timestamp. This is appended to scores and guesses files in order to keep them unique across multiple sessions.
+var basePoints = 1000; //The base number of points for a correct guess.
+var streakBonus = 100; //The number of bonus points scored on a correct guess for each previous consecutive correct guess.
 var listeningForGuesses = false; //Are we listening for guesses?
 var guesses = {}; //Object of guesses. Indices are named with the guesser's username. Values are their guesses.
 var scores = {}; //Object of scores. Indices are named with the player's username. Scores are in scores.score. Current streak is in scores.streak.
@@ -219,8 +219,8 @@ function onMessageHandler(target, context, msg, self)
 			//Did the player get it right?
 			if (guess == ans || ans == '*')
 			{
-				scores[player]['score'] += BASE_POINTS;
-				const bonus = STREAK_BONUS * scores[player]['streak'];
+				scores[player]['score'] += basePoints;
+				const bonus = streakBonus * scores[player]['streak'];
 				scores[player]['score'] += bonus;
 				scores[player]['streak']++;
 			}
@@ -248,7 +248,7 @@ function onMessageHandler(target, context, msg, self)
 	{
 		if (!postFinal)
 		{
-			client.action(CHAT_CHANNEL, 'The !undofinal command is only usable at the end of a round following a !final, before the next !open.')
+			client.action(CHAT_CHANNEL, 'The !undofinal command is only usable at the end of a round following a !final, before the next !open.');
 			return;
 		}
 		postFinal = false;
@@ -263,7 +263,7 @@ function onMessageHandler(target, context, msg, self)
 				console.log('> Undofinal command used.');
 			});
 			lineNumber++;
-			client.action(CHAT_CHANNEL, 'Previous !final command undone; now please use !final with the correct answer.')
+			client.action(CHAT_CHANNEL, 'Previous !final command undone; now please use !final with the correct answer.');
 		});
 
 	}
@@ -277,6 +277,46 @@ function onMessageHandler(target, context, msg, self)
 	else if (commandName === '!testcontroller' && hasElevatedPermissions(context['username']))
 	{
 		client.action(CHAT_CHANNEL, context['username'].concat(', you are a successfully-registered bot controller.'));
+	}
+
+	else if (commandName.substring(0, 11) === '!basepoints' && hasElevatedPermissions(context['username']))
+	{
+		var newValue = Number(commandName.substring(12));
+		if (isNaN(newValue))
+		{
+			client.action(CHAT_CHANNEL, 'Failed to parse command argument as a number.');
+		}
+		else
+		{
+			basePoints = newValue;
+			client.action(CHAT_CHANNEL, 'Base value for correct questions is now '.concat(newValue));
+			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) =>
+			{
+				if (err) throw err;
+				console.log('> Base point value changed.');
+			});
+			lineNumber++;
+		}
+	}
+
+	else if (commandName.substring(0, 13) === '!streakpoints' && hasElevatedPermissions(context['username']))
+	{
+		var newValue = Number(commandName.substring(14));
+		if (isNaN(newValue))
+		{
+			client.action(CHAT_CHANNEL, 'Failed to parse command argument as a number.');
+		}
+		else
+		{
+			streakBonus = newValue;
+			client.action(CHAT_CHANNEL, 'Streak bonus value for correct questions is now '.concat(newValue));
+			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) =>
+			{
+				if (err) throw err;
+				console.log('> Streak bonus point value changed.');
+			});
+			lineNumber++;
+		}
 	}
 
 	else if (commandName.substring(0, 14) === '!addcontroller' && context['display-name'] === BOT_CONTROLLER)
