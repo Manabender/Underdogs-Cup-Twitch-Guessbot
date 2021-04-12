@@ -29,6 +29,7 @@ var leadersTimeoutFunc; //Reference to timeout function used to handle !leaders 
 var leadersAvailable = true; //Is the "cooldown" on the !leaders command available? If this is false, the bot will ignore !leaders requests.
 var lineNumber = 0; //Line number to prepend every log.txt message with. This is useful for exporting the log to, say, Excel; with line numbers, we can tell when everything happened relative to everything else.
 var roundNumber = 0; //Each question is one round. This is appended to scores and guesses files for record-keeping.
+var postFinal = false; //Out of !open, !close, and !final, was !final the most recent? If not, !undofinal cannot be used.
 
 //On start
 fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
@@ -38,7 +39,17 @@ fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
 });
 lineNumber++;
 //Read scores from file. NOTE: This file might need to exist beforehand. And it might need to contain a valid JSON. Note that {} is a valid JSON.
-fs.readFile('scores.txt', (err, data) => { if (err) throw err; scores = JSON.parse(data); updateLeaders(); });
+fs.readFile('scores.txt', (err, data) =>
+{
+	if (err) throw err;
+	scores = JSON.parse(data);
+	updateLeaders();
+	fs.writeFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-0.txt'), JSON.stringify(scores), (err) =>
+	{
+		if (err) throw err;
+		console.log('> Score file 0 written');
+	});
+});
 
 // Called every time a message comes in
 function onMessageHandler(target, context, msg, self)
@@ -131,8 +142,9 @@ function onMessageHandler(target, context, msg, self)
 		roundNumber++;
 		guesses = {};
 		listeningForGuesses = true;
+		postFinal = false;
 		client.action(CHAT_CHANNEL, 'Guessing is open for round '.concat(roundNumber).concat('! Type !guess (number) to submit your answer choice.'));
-		fs.appendFile('log.txt', String(lineNumber).concat('\tROUND START -- GUESSING OPEN\n'), (err) =>
+		fs.appendFile('log.txt', String(lineNumber).concat('\tROUND ').concat(roundNumber).concat(' START-- GUESSING OPEN\n'), (err) =>
 		{
 			if (err) throw err;
 			console.log('> Guessing opened');
@@ -143,13 +155,19 @@ function onMessageHandler(target, context, msg, self)
 	else if (commandName === '!close' && hasElevatedPermissions(context['username']))
 	{
 		listeningForGuesses = false;
+		postFinal = false;
 		client.action(CHAT_CHANNEL, 'Guessing is closed for round '.concat(roundNumber).concat('.'));
-		fs.writeFile('guesses.txt', JSON.stringify(guesses), (err) =>
+		fs.writeFile('guesses.txt', JSON.stringify(guesses), (err) => //Write main guess file
 		{
 			if (err) throw err;
 			console.log('> Guess file written');
 		});
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CLOSED -- IGNORE GUESSES PAST THIS POINT\n'), (err) =>
+		fs.writeFile('guesses-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber).concat('.txt'), JSON.stringify(guesses), (err) => //Also write secondary record-keeping guess file
+		{
+			if (err) throw err;
+			console.log('> Guess file written');
+		});
+		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CLOSED FOR ROUND ').concat(roundNumber).concat(' -- IGNORE GUESSES PAST THIS POINT\n'), (err) =>
 		{
 			if (err) throw err;
 			console.log('> Guessing closed');
@@ -157,11 +175,32 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
+	else if (commandName === '!cancelopen' && hasElevatedPermissions(context['username']))
+	{
+		if (listeningForGuesses)
+		{
+			listeningForGuesses = false;
+			client.action(CHAT_CHANNEL, 'Guessing has been cancelled for round '.concat(roundNumber).concat('.'));
+			roundNumber--;
+			fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CANCELLED -- IGNORE GUESSES ABOVE\n'), (err) =>
+			{
+				if (err) throw err;
+				console.log('> Guessing cancelled');
+			});
+			lineNumber++;
+		}
+		else
+		{
+			client.action(CHAT_CHANNEL, 'The !cancelopen command can only be used while guessing is open.');
+		}
+	}
+
 	else if (commandName.substring(0, 6) === '!final' && hasElevatedPermissions(context['username']))
 	{
+		postFinal = true;
 		var ans = commandName.substring(7, 8);
 		client.action(CHAT_CHANNEL, 'Final answer is '.concat(ans).concat(' for round number ').concat(roundNumber).concat('.'));
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED: CORRECT ANSWER WAS ').concat(ans).concat('\n'), (err) =>
+		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED FOR ROUND ').concat(roundNumber).concat(': CORRECT ANSWER WAS ').concat(ans).concat('\n'), (err) =>
 		{
 			if (err) throw err;
 			console.log('> Final answer logged as '.concat(ans));
@@ -191,14 +230,42 @@ function onMessageHandler(target, context, msg, self)
 			}
 		}
 		//Write scores to file.
-		fs.writeFile('scores.txt', JSON.stringify(scores), (err) =>
+		fs.writeFile('scores.txt', JSON.stringify(scores), (err) => //Write main score file
+		{
+			if (err) throw err;
+			console.log('> Score file written');
+		});
+		fs.writeFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber).concat('.txt'), JSON.stringify(scores), (err) => //Also write secondary record-keeping score file
 		{
 			if (err) throw err;
 			console.log('> Score file written');
 		});
 		//Determine leaders.
 		updateLeaders();
-		guesses = {};
+	}
+
+	else if (commandName === '!undofinal' && hasElevatedPermissions(context['username']))
+	{
+		if (!postFinal)
+		{
+			client.action(CHAT_CHANNEL, 'The !undofinal command is only usable at the end of a round following a !final, before the next !open.')
+			return;
+		}
+		postFinal = false;
+		fs.readFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber - 1).concat('.txt'), (err, data) =>
+		{
+			if (err) throw err;
+			scores = JSON.parse(data);
+			updateLeaders();
+			fs.appendFile('log.txt', String(lineNumber).concat('\tINCORRECT ANSWER LOGGED FOR ROUND ').concat(roundNumber).concat(': IGNORE PREVIOUS ANSWER AND USE NEXT INSTEAD\n'), (err) =>
+			{
+				if (err) throw err;
+				console.log('> Undofinal command used.');
+			});
+			lineNumber++;
+			client.action(CHAT_CHANNEL, 'Previous !final command undone; now please use !final with the correct answer.')
+		});
+
 	}
 
 	else if (commandName === '!ping' && hasElevatedPermissions(context['username']))
