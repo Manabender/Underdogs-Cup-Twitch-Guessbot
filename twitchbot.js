@@ -62,7 +62,7 @@ function onMessageHandler(target, context, msg, self)
 	if (commandName.substring(0, 6) === '!guess')
 	{
 		var guesser = context['username'];
-		var ans = commandName.substring(7, 8);
+		var ans = commandName.substring(6).trim().substring(0,1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
 		if (listeningForGuesses)
 		{
 
