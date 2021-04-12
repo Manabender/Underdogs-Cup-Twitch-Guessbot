@@ -224,6 +224,8 @@ function onMessageHandler(target, context, msg, self)
 		});
 		lineNumber++;
 		//Process scores
+		var correctAnswers = 0;
+		var totalAnswers = 0;
 		for (const [player, guess] of Object.entries(guesses))
 		{
 			//If the player isn't in the score table, add them.
@@ -240,10 +242,13 @@ function onMessageHandler(target, context, msg, self)
 				const bonus = streakBonus * scores[player]['streak'];
 				scores[player]['score'] += bonus;
 				scores[player]['streak']++;
+				correctAnswers++;
+				totalAnswers++;
 			}
 			else if (guess != '') //An empty guess is either an incorrectly-entered guess or a retracted guess. In either case, do not break their streak.
 			{
 				scores[player]['streak'] = 0;
+				totalAnswers++;
 			}
 		}
 		//Write scores to file.
@@ -257,6 +262,7 @@ function onMessageHandler(target, context, msg, self)
 			if (err) throw err;
 			console.log('> Score file written');
 		});
+		client.action(CHAT_CHANNEL, 'There were '.concat(correctAnswers).concat(' correct answers out of a total of ').concat(totalAnswers).concat('.'));
 		//Determine leaders.
 		updateLeaders();
 	}
