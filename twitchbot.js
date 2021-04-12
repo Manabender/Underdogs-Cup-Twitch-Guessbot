@@ -23,6 +23,7 @@ var guesses = {}; //Object of guesses. Indices are named with the guesser's user
 var scores = {}; //Object of scores. Indices are named with the player's username. Scores are in scores.score. Current streak is in scores.streak.
 var leaderNames = ['nobody1', 'nobody2', 'nobody3', 'nobody4', 'nobody5']; //Array of leaders. Indices are their position (index 0 is 1st place, etc.). Values are their names.
 var leaderScores = [0, 0, 0, 0, 0]; //Array of leaders' scores. Indices are their position (index 0 is 1st place, etc.). Values are their scores.
+var leaderStreaks = [0, 0, 0, 0, 0]; //Array of leaders' streaks.
 var scoreRequests = []; //Array of people that have requested their !score.
 var scoreTimeoutFunc; //Reference to timeout function used to batch-post !score requests.
 var leadersTimeoutFunc; //Reference to timeout function used to handle !leaders cooldown.
@@ -142,7 +143,8 @@ function onMessageHandler(target, context, msg, self)
 			{
 				outString = outString.concat(i).concat('. ');
 				outString = outString.concat(leaderNames[i - 1]).concat(': ');
-				outString = outString.concat(leaderScores[i - 1]).concat(' ||| ');
+				outString = outString.concat(leaderScores[i - 1]).concat(', streak ');
+				outString = outString.concat(leaderStreaks[i - 1]).concat(' ||| ');
 			}
 			client.action(CHAT_CHANNEL, outString);
 			leadersAvailable = false;
@@ -416,9 +418,11 @@ function updateLeaders()
 {
 	leaderNames = ['nobody1', 'nobody2', 'nobody3', 'nobody4', 'nobody5'];
 	leaderScores = [0, 0, 0, 0, 0];
+	leaderStreaks = [0, 0, 0, 0, 0];
 	for (const [player, scoreObj] of Object.entries(scores))
 	{
 		const score = scoreObj['score'];
+		const streak = scoreObj['streak'];
 		for (var i = 0; i < 5; i++)
 		{
 			if (score > leaderScores[i])
@@ -428,9 +432,11 @@ function updateLeaders()
 				{
 					leaderNames[j] = leaderNames[j - 1];
 					leaderScores[j] = leaderScores[j - 1];
+					leaderStreaks[j] = leaderStreaks[j - 1];
 				}
 				leaderNames[i] = player;
 				leaderScores[i] = score;
+				leaderStreaks[i] = streak;
 				break;
 			}
 		}
