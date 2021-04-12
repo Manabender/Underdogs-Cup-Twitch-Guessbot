@@ -15,6 +15,7 @@ var addedControllers = ['caboozled']; //Array of people allowed to run elevated 
 const MAX_SCORE_REQUESTS = 6; //The maximum number of !score requests that can be posted in a single message. This was determined experimentally with a 25 character username, 5 character score, and 2 character streak.
 const SCORE_REQUEST_BATCH_WAIT = 5000; //The amount of time (in milliseconds) to wait after a !score request to batch-post them.
 const LEADERS_COOLDOWN_WAIT = 15000; //The amount of time (in milliseconds) for which the bot will ignore further !leaders commands. Used in order to keep things less spammy.
+const QA_COOLDOWN_WAIT = 15000; // See above but for !question/!answers
 const INITIAL_TIMESTAMP = Date.now(); //A UNIX timestamp. This is appended to scores and guesses files in order to keep them unique across multiple sessions.
 var basePoints = 1000; //The base number of points for a correct guess.
 var streakBonus = 100; //The number of bonus points scored on a correct guess for each previous consecutive correct guess.
@@ -27,9 +28,12 @@ var leaderStreaks = [0, 0, 0, 0, 0]; //Array of leaders' streaks.
 var scoreRequests = []; //Array of people that have requested their !score.
 var scoreTimeoutFunc; //Reference to timeout function used to batch-post !score requests.
 var leadersTimeoutFunc; //Reference to timeout function used to handle !leaders cooldown.
+var qaTimeoutFunc; //Reference to timeout function used to handle !question/!answers cooldown.
 var leadersAvailable = true; //Is the "cooldown" on the !leaders command available? If this is false, the bot will ignore !leaders requests.
+var qaAvailable = true; //Is the cooldown on the !question/!answers command available?
 var lineNumber = 0; //Line number to prepend every log.txt message with. This is useful for exporting the log to, say, Excel; with line numbers, we can tell when everything happened relative to everything else.
 var roundNumber = 0; //Each question is one round. This is appended to scores and guesses files for record-keeping.
+var question = ""; //A simple string to put the current question and answers in which users can later fetch.
 var postFinal = false; //Out of !open, !close, and !final, was !final the most recent? If not, !undofinal cannot be used.
 
 //On start
@@ -63,7 +67,7 @@ function onMessageHandler(target, context, msg, self)
 	if (commandName.substring(0, 6) === '!guess')
 	{
 		var guesser = context['username'];
-		var ans = commandName.substring(6).trim().substring(0,1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
+		var ans = commandName.substring(6).trim().substring(0, 1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
 		if (listeningForGuesses)
 		{
 			guesses[guesser] = ans;
@@ -156,12 +160,35 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
+	else if (commandName.substring(0, 9) === '!question' || commandName.substring(0, 8) === '!answers')
+	{
+		if (qaAvailable)
+		{
+			console.log('> Question/Answers command used');
+			if (question == '')
+			{
+				client.action(CHAT_CHANNEL, "No question has been logged this round! Is Mana slacking?");
+			}
+			else
+			{
+				client.action(CHAT_CHANNEL, question);
+			}
+			qaAvailable = false;
+			qaTimeoutFunc = setTimeout(function () { qaAvailable = true; }, QA_COOLDOWN_WAIT);
+		}
+		else
+		{
+			console.log('> Question/Answers command used but currently on cooldown');
+		}
+	}
+
 	else if (commandName === '!open' && hasElevatedPermissions(context['username']))
 	{
 		roundNumber++;
 		guesses = {};
 		listeningForGuesses = true;
 		postFinal = false;
+		question = "";
 		client.action(CHAT_CHANNEL, 'Guessing is open for round '.concat(roundNumber).concat('! Type !guess (number) to submit your answer choice.'));
 		fs.appendFile('log.txt', String(lineNumber).concat('\tROUND ').concat(roundNumber).concat(' START-- GUESSING OPEN\n'), (err) =>
 		{
@@ -212,6 +239,19 @@ function onMessageHandler(target, context, msg, self)
 		{
 			client.action(CHAT_CHANNEL, 'The !cancelopen command can only be used while guessing is open.');
 		}
+	}
+
+	else if (commandName.substring(0, 5) === '!setq' && hasElevatedPermissions(context['username']))
+	{
+		var arg = commandName.substring(6);
+		question = arg;
+		client.action(CHAT_CHANNEL, 'Question has been logged. Anyone may review the question and answers later with !question or !answers');
+		fs.appendFile('log.txt', String(lineNumber).concat('\tQUESTION LOGGED AS FOLLOWS: ').concat(arg).concat('\n'), (err) =>
+		{
+			if (err) throw err;
+			console.log('> Question logged');
+		});
+		lineNumber++;
 	}
 
 	else if (commandName.substring(0, 6) === '!final' && hasElevatedPermissions(context['username']))
