@@ -10,7 +10,7 @@ ConnectToTwitch(credentials, CHAT_CHANNEL)
 
 
 // Constants and variables
-import {BOT_CONTROLLER, addedControllers, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP, basePoints, streakBonus, listeningForGuesses, guesses, scores, leaderNames, leaderScores, leaderStreaks, scoreRequests, scoreTimeoutFunc, leadersTimeoutFunc, qaTimeoutFunc, leadersAvailable, qaAvailable, lineNumber, roundNumber, question, postFinal} from ".\config"
+import {BOT_CONTROLLER, addedControllers, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP, basePoints, streakBonus, listeningForGuesses, guesses, scores, leaderNames, leaderScores, leaderStreaks, scoreRequests, scoreTimeoutFunc, leadersTimeoutFunc, qaTimeoutFunc, leadersAvailable, qaAvailable, lineNumber, roundNumber, question, postFinal} from "./config"
 
 //On start
 fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
