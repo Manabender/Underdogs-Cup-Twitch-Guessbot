@@ -28,7 +28,8 @@ ConnectToTwitch(credentials, CHAT_CHANNEL)
 
 
 // Constants and variables
-import {BOT_CONTROLLER, addedControllers, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP, basePoints, streakBonus} from "./config"
+var {addedControllers, basePoints, streakBonus} = require("./config")
+const {BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP} = require("./config")
 
 //On start
 fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
