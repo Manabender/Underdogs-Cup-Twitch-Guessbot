@@ -55,3 +55,8 @@ Change the amount of base points awarded to players for a correct answer. Defaul
 
 #### !streakpoints [value]
 Change the amount of points awarded to players as a streak bonus. Default is 100. I don't actually expect to use this command, but I added it anyway because why not?
+
+## Can I use this myself?
+Short answer: Sure!
+
+Longer answer: Using this bot requires a bit of technical know-how. Also, you won't be using my *bot*, so to speak, but my *code*. You will need to create your own twitch account for your instance my bot code to use and supply its credentials in a separate file. You'll also need to change a few things, like <code>BOT_CONTROLLER</code> and <code>CHAT_CHANNEL</code>. But, assuming you know how to use it, I don't mind if you do. It would be nice if you gave credit where credit is due, of course.
