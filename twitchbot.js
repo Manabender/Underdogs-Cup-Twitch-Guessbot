@@ -1,7 +1,25 @@
 const tmi = require('tmi.js');
 const fs = require('fs');
 
+//init
 const CHAT_CHANNEL = 'Manabender'; //The channel to send chat messages to.
+var scoreTimeoutFunc; //Reference to timeout function used to batch-post !score requests.
+var leadersTimeoutFunc; //Reference to timeout function used to handle !leaders cooldown.
+var qaTimeoutFunc; //Reference to timeout function used to handle !question/!answers cooldown.
+var listeningForGuesses = false; //Are we listening for guesses?
+var guesses = {}; //Object of guesses. Indices are named with the guesser's username. Values are their guesses.
+var scores = {}; //Object of scores. Indices are named with the player's username. Scores are in scores.score. Current var ak is in scores.streak.
+var leaderNames = ['nobody1', 'nobody2', 'nobody3', 'nobody4', 'nobody5']; //Array of leaders. Indices are their position var ex 0 is 1st place, etc.). Values are their names.
+var leaderScores = [0, 0, 0, 0, 0]; //Array of leaders' scores. Indices are their position (index 0 is 1st place, etc.). var es are their scores.
+var leaderStreaks = [0, 0, 0, 0, 0]; //Array of leaders' streaks.
+var scoreRequests = []; //Array of people that have requested their !score.
+var leadersAvailable = true; //Is the "cooldown" on the !leaders command available? If this is false, the bot will ignore !leaders requests.
+var qaAvailable = true; //Is the cooldown on the !question/!answers command available?
+var lineNumber = 0; //Line number to prepend every log.txt message with. This is useful for exporting the log to, say, Excel; with line numbers, we can tell when everything happened relative to everything else.
+var roundNumber = 0; //Each question is one round. This is appended to scores and guesses files for record-keeping.
+var question = ""; //A simple string to put the current question and answers in which users can later fetch.
+var postFinal = false; //Out of !open, !close, and !final, was !final the most recent? If not, !undofinal cannot be used.
+
 
 //No OAuth key for you! This block reads the username and password from a private .gitignore-d file, then uses those credentials to connect to Twitch.
 var credentials = require("./config").auth
@@ -10,7 +28,7 @@ ConnectToTwitch(credentials, CHAT_CHANNEL)
 
 
 // Constants and variables
-import {BOT_CONTROLLER, addedControllers, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP, basePoints, streakBonus, listeningForGuesses, guesses, scores, leaderNames, leaderScores, leaderStreaks, scoreRequests, scoreTimeoutFunc, leadersTimeoutFunc, qaTimeoutFunc, leadersAvailable, qaAvailable, lineNumber, roundNumber, question, postFinal} from "./config"
+import {BOT_CONTROLLER, addedControllers, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP, basePoints, streakBonus} from "./config"
 
 //On start
 fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
