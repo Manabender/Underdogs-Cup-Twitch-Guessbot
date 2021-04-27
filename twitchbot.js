@@ -59,7 +59,7 @@ function onMessageHandler(target, context, msg, self)
 	// Remove whitespace from chat message
 	const commandName = msg.trim();
 
-	if (commandName.substring(0, 6) === '!guess')
+	if (commandName.startsWith('!guess'))
 	{
 		var guesser = context['username'];
 		var ans = commandName.substring(6).trim().substring(0, 1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
@@ -79,7 +79,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 6) === '!score')
+	else if (commandName.startsWith('!score'))
 	{
 		/*
 		const player = context['username'];
@@ -113,7 +113,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 8) === '!unguess')
+	else if (commandName.startsWith('!unguess'))
 	{
 		var guesser = context['username'];
 		if (listeningForGuesses)
@@ -155,7 +155,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 9) === '!question' || commandName.substring(0, 8) === '!answers')
+	else if (commandName.startsWith('!question') || commandName.substring(0, 8) === '!answers')
 	{
 		if (qaAvailable)
 		{
