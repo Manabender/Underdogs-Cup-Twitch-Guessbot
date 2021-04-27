@@ -132,7 +132,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 8) === '!leaders')
+	else if (commandName.startsWith('!leaders'))
 	{
 		if (leadersAvailable)
 		{
@@ -155,7 +155,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.startsWith('!question') || commandName.substring(0, 8) === '!answers')
+	else if (commandName.startsWith('!question') || commandName.startsWith('!answers'))
 	{
 		if (qaAvailable)
 		{
@@ -177,7 +177,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName === '!open' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!open') && hasElevatedPermissions(context['username']))
 	{
 		roundNumber++;
 		guesses = {};
@@ -193,7 +193,7 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
-	else if (commandName === '!close' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!close') && hasElevatedPermissions(context['username']))
 	{
 		listeningForGuesses = false;
 		postFinal = false;
@@ -216,7 +216,7 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
-	else if (commandName === '!cancelopen' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!cancelopen') && hasElevatedPermissions(context['username']))
 	{
 		if (listeningForGuesses)
 		{
@@ -236,7 +236,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 5) === '!setq' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!setq') && hasElevatedPermissions(context['username']))
 	{
 		var arg = commandName.substring(6);
 		question = arg;
@@ -249,7 +249,7 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
-	else if (commandName.substring(0, 6) === '!final' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!final') && hasElevatedPermissions(context['username']))
 	{
 		postFinal = true;
 		var arg = commandName.substring(7).trim();
@@ -311,7 +311,7 @@ function onMessageHandler(target, context, msg, self)
 		updateLeaders();
 	}
 
-	else if (commandName === '!undofinal' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!undofinal') && hasElevatedPermissions(context['username']))
 	{
 		if (!postFinal)
 		{
@@ -335,18 +335,18 @@ function onMessageHandler(target, context, msg, self)
 
 	}
 
-	else if (commandName === '!ping' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!ping') && hasElevatedPermissions(context['username']))
 	{
 		client.action(CHAT_CHANNEL, 'Pong!');
 		console.log('> Pong!');
 	}
 
-	else if (commandName === '!testcontroller' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!testcontroller') && hasElevatedPermissions(context['username']))
 	{
 		client.action(CHAT_CHANNEL, context['username'].concat(', you are a successfully-registered bot controller.'));
 	}
 
-	else if (commandName.substring(0, 11) === '!basepoints' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!basepoints') && hasElevatedPermissions(context['username']))
 	{
 		var newValue = Number(commandName.substring(12));
 		if (isNaN(newValue))
@@ -366,7 +366,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 13) === '!streakpoints' && hasElevatedPermissions(context['username']))
+	else if (commandName.startsWith('!streakpoints') && hasElevatedPermissions(context['username']))
 	{
 		var newValue = Number(commandName.substring(14));
 		if (isNaN(newValue))
@@ -386,7 +386,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.substring(0, 14) === '!addcontroller' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!addcontroller') && context['display-name'] === BOT_CONTROLLER)
 	{
 		var newController = commandName.substring(15);
 		addedControllers.push(newController);
@@ -394,7 +394,7 @@ function onMessageHandler(target, context, msg, self)
 		client.action(CHAT_CHANNEL, 'Added new controller: '.concat(newController));
 	}
 
-	else if (commandName.substring(0, 17) === '!removecontroller' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!removecontroller') && context['display-name'] === BOT_CONTROLLER)
 	{
 		var newController = commandName.substring(18);
 		var index = addedControllers.indexOf(newController);
@@ -410,7 +410,7 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName === '!recoverguesses' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!recoverguesses') && context['display-name'] === BOT_CONTROLLER)
 	{
 		console.log('> Used command recoverguesses');
 		listeningForGuesses = true;
@@ -423,7 +423,7 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
-	else if (commandName === '!recoverround' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!recoverround') && context['display-name'] === BOT_CONTROLLER)
 	{
 		console.log('> Used command recoverround');
 		fs.readFile('guesses.txt', (err, data) => { if (err) throw err; guesses = JSON.parse(data); });
@@ -435,14 +435,14 @@ function onMessageHandler(target, context, msg, self)
 		lineNumber++;
 	}
 
-	else if (commandName === '!calcleaders' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!calcleaders') && context['display-name'] === BOT_CONTROLLER)
 	{
 		console.log('> Used command calcleaders');
 		client.action(CHAT_CHANNEL, 'Rebuilding leader list.');
 		updateLeaders();
 	}
 
-	else if (commandName === '!debug' && context['display-name'] === BOT_CONTROLLER)
+	else if (commandName.startsWith('!debug') && context['display-name'] === BOT_CONTROLLER)
 	{
 		console.log(guesses);
 		console.log(leaderNames);
