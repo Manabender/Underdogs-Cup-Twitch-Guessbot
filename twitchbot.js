@@ -22,14 +22,14 @@ var postFinal = false; //Out of !open, !close, and !final, was !final the most r
 
 
 //No OAuth key for you! This block reads the username and password from a private .gitignore-d file, then uses those credentials to connect to Twitch.
-var credentials = require("./config").auth
+var { username, password } = require("./credentials");
 var client;
-ConnectToTwitch(credentials, CHAT_CHANNEL)
+ConnectToTwitch(CHAT_CHANNEL);
 
 
 // Constants and variables
-var {addedControllers, basePoints, streakBonus} = require("./config")
-const {BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP} = require("./config")
+var { addedControllers, basePoints, streakBonus } = require("./config");
+const { BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP } = require("./config");
 
 //On start
 fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
@@ -526,13 +526,13 @@ function hasElevatedPermissions(user)
 	return false;
 }
 
-function ConnectToTwitch(credentials, channel)
+function ConnectToTwitch(channel)
 {
 	// Define configuration options
 	const opts = {
 		identity: {
-			username: credentials["username"],
-			password: credentials["password"]
+			username: username,
+			password: password
 		},
 		channels: [
 			channel

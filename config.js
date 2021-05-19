@@ -1,8 +1,4 @@
 module.exports = {
-    auth : {
-        username : 'test', //Put username of bot account here
-        password : 'test', //put password of bot account here
-    },
     BOT_CONTROLLER : 'Manabender', //Some commands only work when the bot controller issues them.
     addedControllers : ['caboozled'], //Array of people allowed to run elevated commands.
     MAX_SCORE_REQUESTS : 6, //The maximum number of !score requests that can be posted in a single message. This was determined experimentally with a 25 character username, 5 character score, and 2 character streak.
