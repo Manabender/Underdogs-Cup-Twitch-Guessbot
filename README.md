@@ -6,7 +6,7 @@ If you do not make any guess for a question, your streak is preserved. For examp
 Note that both the base point value and streak bonus can be changed, for example to make later questions worth more. There are currently no plans to do this for UC8, however.
 
 ## User commands
-The following commands can be used by anyone in chat.
+The following commands can be used by anyone in chat. **Note that all commands can be whispered to the bot! This is particularly useful for !guess as it allows you to make your guess in secret.**
 
 #### !guess [number]
 Registers your guess. Type, for example, "!guess 2" if you think option 2 is correct. Only works if guessing is actually open. If you change your mind about which answer you think will be correct, you can type another !guess command. Whichever !guess you register last before guessing is closed will be used as your actual guess. (Technical note: The command will only register the first non-whitespace character after "!guess" as your actual guess. In other words, all of the following would register you as having guessed 1: !guess 1, !guess1, !guess 1234, !guess 1 GO PLAYER YOU CAN DO IT) (PLEASE NOTE: All commands are case-sensitive. The !guess command must be entirely lowercase letters. !Guess and !GUESS will not work.)
