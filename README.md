@@ -60,3 +60,5 @@ Change the amount of points awarded to players as a streak bonus. Default is 100
 Short answer: Sure!
 
 Longer answer: Using this bot requires a bit of technical know-how. Also, you won't be using my *bot*, so to speak, but my *code*. You will need to create your own twitch account for your instance my bot code to use and supply its credentials in a separate file. You'll also need to change a few things, like <code>BOT_CONTROLLER</code> and <code>CHAT_CHANNEL</code>. But, assuming you know how to use it, I don't mind if you do. It would be nice if you gave credit where credit is due, of course.
+
+Note that you will need a file named <code>scores.txt</code> in the folder that the script runs in, and it must contain a valid JSON, otherwise it will fail to launch properly. An empty JSON <code>{}</code> is sufficient. The script will update this file after every round.
