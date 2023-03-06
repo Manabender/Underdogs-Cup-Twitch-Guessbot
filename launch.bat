@@ -1,2 +1,2 @@
-node twitchbot.js
+node index.js
 pause

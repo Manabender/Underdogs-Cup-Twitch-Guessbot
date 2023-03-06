@@ -73,8 +73,12 @@ rl.on('line', input => {
 	const type = input.split(" ")[0];
 	const query = input.split(" ").slice(1).join(" ");
 	if (!query) return;
-	const response = db.prepare(query)[type]?.();
-	console.log(`Result: ${JSON.stringify(response, null, 4)}`)
+	try {
+		const response = db.prepare(query)[type]?.();
+		console.log(`Result: ${JSON.stringify(response, null, 4)}`)
+	} catch {
+		console.log("Could not run SQL query. Was it correctly typed?")
+	}
 });
 
 // Called every time a message comes in
