@@ -1,10 +1,27 @@
-const tmi = require('tmi.js');
-const fs = require('fs');
+// Dependencies
+import tmi from 'tmi.js';
+import fs from 'fs';
+import * as readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
+const rl = readline.createInterface({ input, output });
+import dotenv from 'dotenv';
+dotenv.config();
 
-//init
+// Constants and Variables
+import config from './config.js';
+import { guessPhase, db } from './util.js';
+import commandList from './commands.js';
+let { addedControllers, basePoints, streakBonus } = config;
+const { BOT_NAME, CHAT_CHANNEL, BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP } = config;
+
+// Creates a log in both the terminal and in the log.txt file
+function logAction(message = "ANONYMOUS ACTION") {
+	fs.appendFileSync('log.txt', `${lineNumber}\t${message}\n`);
+	lineNumber++;
+	console.log(`> ${message}`);
+}
+
 var scoreTimeoutFunc; //Reference to timeout function used to batch-post !score requests.
-var leadersTimeoutFunc; //Reference to timeout function used to handle !leaders cooldown.
-var qaTimeoutFunc; //Reference to timeout function used to handle !question/!answers cooldown.
 var listeningForGuesses = false; //Are we listening for guesses?
 var guesses = {}; //Object of guesses. Indices are named with the guesser's username. Values are their guesses.
 var scores = {}; //Object of scores. Indices are named with the player's username. Scores are in scores.score. Current var ak is in scores.streak.
@@ -19,66 +36,52 @@ var roundNumber = 0; //Each question is one round. This is appended to scores an
 var question = ""; //A simple string to put the current question and answers in which users can later fetch.
 var postFinal = false; //Out of !open, !close, and !final, was !final the most recent? If not, !undofinal cannot be used.
 
-
-// Constants and variables
-var { addedControllers, basePoints, streakBonus } = require("./config");
-const { CHAT_CHANNEL, BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP } = require("./config");
-
-//No OAuth key for you! This block reads the username and password from a private .gitignore-d file, then uses those credentials to connect to Twitch.
-var { username, password } = require("./credentials");
-var client;
-ConnectToTwitch(CHAT_CHANNEL);
-
-//On start
-fs.appendFile('log.txt', String(lineNumber).concat('\tBOT STARTED\n'), (err) =>
-{
-	if (err) throw err;
-	console.log('Bot started');
+// Create a client with our options
+global.client = new tmi.client({
+	identity: {
+		username: BOT_NAME,
+		password: process.env.OAUTH_KEY
+	},
+	channels: [CHAT_CHANNEL]
 });
-lineNumber++;
-//Read scores from file. NOTE: This file might need to exist beforehand. And it might need to contain a valid JSON. Note that {} is a valid JSON.
-fs.readFile('scores.txt', (err, data) =>
-{
-	if (err) throw err;
-	scores = JSON.parse(data);
-	updateLeaders();
-	fs.writeFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-0.txt'), JSON.stringify(scores), (err) =>
-	{
-		if (err) throw err;
-		console.log('> Score file 0 written');
+// Register our event handlers (defined below)
+client.on('message', (_, context, message, self) => {
+	if (self) return; // Ignore messages from the bot
+	if (!message.startsWith("!")) return; // Ignore messages without the prefix
+
+	// Remove whitespace from chat message and create message/args to pass as parameters
+	const args = message.substring(1).trim().split(" ");
+	// Find the corresponding command from the command index and execute it, also removes the base command
+	const command = commandList[args.splice(0, 1)[0]];
+	if (!command) return;
+
+	// Use only the needed parameters, also add optional parameters for some commands
+	const response = command({
+		context,
+		args,
+		username: context.username
 	});
+	logAction(response);
+});
+
+client.on('connected', () => console.log(`* Connected successfully to Twitch channel: ${CHAT_CHANNEL}`));
+
+// Connect to Twitch:
+client.connect();
+
+rl.on('line', input => {
+	const type = input.split(" ")[0];
+	const query = input.split(" ").slice(1).join(" ");
+	if (!query) return;
+	const response = db.prepare(query)[type]?.();
+	console.log(`Result: ${JSON.stringify(response, null, 4)}`)
 });
 
 // Called every time a message comes in
-function onMessageHandler(target, context, msg, self)
-{
-	if (self) { return; } // Ignore messages from the bot
+function onMessageHandler(_, context, message, self) {
 
-	// Remove whitespace from chat message
-	const commandName = msg.trim();
 
-	if (commandName.startsWith('!guess'))
-	{
-		var guesser = context['username'];
-		var ans = commandName.substring(6).trim().substring(0, 1); //First, take '!guess' off the message. Then, take whitespace off the front. Lastly, take the first character that remains.
-		if (listeningForGuesses)
-		{
-			guesses[guesser] = ans;
-			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\t').concat(ans).concat('\n'), (err) =>
-			{
-				if (err) throw err;
-				console.log('> '.concat(guesser).concat(' guessed ').concat(ans));
-			});
-			lineNumber++;
-		}
-		else
-		{
-			console.log('> '.concat(guesser).concat(' tried to guess ').concat(ans).concat(' but guessing isn\'t open right now'));
-		}
-	}
-
-	else if (commandName.startsWith('!score'))
-	{
+	if (commandName.startsWith('!score')) {
 		/*
 		const player = context['username'];
 		var score = 0;
@@ -111,33 +114,26 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.startsWith('!unguess'))
-	{
+	else if (commandName.startsWith('!unguess')) {
 		var guesser = context['username'];
-		if (listeningForGuesses)
-		{
+		if (listeningForGuesses) {
 			guesses[guesser] = "";
-			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\tcancel guess\n'), (err) =>
-			{
+			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\tcancel guess\n'), (err) => {
 				if (err) throw err;
 				console.log('> '.concat(guesser).concat(' unguessed '));
 			});
 			lineNumber++;
 		}
-		else
-		{
+		else {
 			console.log('> '.concat(guesser).concat(' tried to unguess ').concat(ans).concat(' but guessing isn\'t open right now'));
 		}
 	}
 
-	else if (commandName.startsWith('!leaders'))
-	{
-		if (leadersAvailable)
-		{
+	else if (commandName.startsWith('!leaders')) {
+		if (leadersAvailable) {
 			console.log('> Leaders command used');
 			var outString = '';
-			for (var i = 1; i <= 5; i++)
-			{
+			for (var i = 1; i <= 5; i++) {
 				outString = outString.concat(i).concat('. ');
 				outString = outString.concat(leaderNames[i - 1]).concat(': ');
 				outString = outString.concat(leaderScores[i - 1]).concat(', streak ');
@@ -145,54 +141,31 @@ function onMessageHandler(target, context, msg, self)
 			}
 			client.action(CHAT_CHANNEL, outString);
 			leadersAvailable = false;
-			leadersTimeoutFunc = setTimeout(function () { leadersAvailable = true; }, LEADERS_COOLDOWN_WAIT);
+			setTimeout(function () { leadersAvailable = true; }, LEADERS_COOLDOWN_WAIT);
 		}
-		else
-		{
+		else {
 			console.log('> Leaders command used but currently on cooldown');
 		}
 	}
 
-	else if (commandName.startsWith('!question') || commandName.startsWith('!answers'))
-	{
-		if (qaAvailable)
-		{
+	else if (commandName.startsWith('!question') || commandName.startsWith('!answers')) {
+		if (qaAvailable) {
 			console.log('> Question/Answers command used');
-			if (question == '')
-			{
+			if (question == '') {
 				client.action(CHAT_CHANNEL, "No question has been logged this round! Is Mana slacking?");
 			}
-			else
-			{
+			else {
 				client.action(CHAT_CHANNEL, question);
 			}
 			qaAvailable = false;
-			qaTimeoutFunc = setTimeout(function () { qaAvailable = true; }, QA_COOLDOWN_WAIT);
+			setTimeout(function () { qaAvailable = true; }, QA_COOLDOWN_WAIT);
 		}
-		else
-		{
+		else {
 			console.log('> Question/Answers command used but currently on cooldown');
 		}
 	}
 
-	else if (commandName.startsWith('!open') && hasElevatedPermissions(context['username']))
-	{
-		roundNumber++;
-		guesses = {};
-		listeningForGuesses = true;
-		postFinal = false;
-		question = "";
-		client.action(CHAT_CHANNEL, 'Guessing is open for round '.concat(roundNumber).concat('! Type !guess (number) to submit your answer choice.'));
-		fs.appendFile('log.txt', String(lineNumber).concat('\tROUND ').concat(roundNumber).concat(' START-- GUESSING OPEN\n'), (err) =>
-		{
-			if (err) throw err;
-			console.log('> Guessing opened');
-		});
-		lineNumber++;
-	}
-
-	else if (commandName.startsWith('!close') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!close') && hasElevatedPermissions(context['username'])) {
 		listeningForGuesses = false;
 		postFinal = false;
 		client.action(CHAT_CHANNEL, 'Guessing is closed for round '.concat(roundNumber).concat('.'));
@@ -206,80 +179,67 @@ function onMessageHandler(target, context, msg, self)
 			if (err) throw err;
 			console.log('> Guess file written');
 		});
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CLOSED FOR ROUND ').concat(roundNumber).concat(' -- IGNORE GUESSES PAST THIS POINT\n'), (err) =>
-		{
+		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CLOSED FOR ROUND ').concat(roundNumber).concat(' -- IGNORE GUESSES PAST THIS POINT\n'), (err) => {
 			if (err) throw err;
 			console.log('> Guessing closed');
 		});
 		lineNumber++;
 	}
 
-	else if (commandName.startsWith('!cancelopen') && hasElevatedPermissions(context['username']))
-	{
-		if (listeningForGuesses)
-		{
+	else if (commandName.startsWith('!cancelopen') && hasElevatedPermissions(context['username'])) {
+		if (listeningForGuesses) {
 			listeningForGuesses = false;
 			client.action(CHAT_CHANNEL, 'Guessing has been cancelled for round '.concat(roundNumber).concat('.'));
 			roundNumber--;
-			fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CANCELLED -- IGNORE GUESSES ABOVE\n'), (err) =>
-			{
+			fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CANCELLED -- IGNORE GUESSES ABOVE\n'), (err) => {
 				if (err) throw err;
 				console.log('> Guessing cancelled');
 			});
 			lineNumber++;
 		}
-		else
-		{
+		else {
 			client.action(CHAT_CHANNEL, 'The !cancelopen command can only be used while guessing is open.');
 		}
 	}
 
-	else if (commandName.startsWith('!setq') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!setq') && hasElevatedPermissions(context['username'])) {
 		var arg = commandName.substring(6);
 		question = arg;
 		client.action(CHAT_CHANNEL, 'Question has been logged. Anyone may review the question and answers later with !question or !answers');
-		fs.appendFile('log.txt', String(lineNumber).concat('\tQUESTION LOGGED AS FOLLOWS: ').concat(arg).concat('\n'), (err) =>
-		{
+		fs.appendFile('log.txt', String(lineNumber).concat('\tQUESTION LOGGED AS FOLLOWS: ').concat(arg).concat('\n'), (err) => {
 			if (err) throw err;
 			console.log('> Question logged');
 		});
 		lineNumber++;
 	}
 
-	else if (commandName.startsWith('!final') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!final') && hasElevatedPermissions(context['username'])) {
 		postFinal = true;
 		var arg = commandName.substring(7).trim();
 		client.action(CHAT_CHANNEL, 'Final answer is '.concat(arg).concat(' for round number ').concat(roundNumber).concat('.'));
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED FOR ROUND ').concat(roundNumber).concat(': CORRECT ANSWER WAS ').concat(arg).concat('\n'), (err) =>
-		{
+		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESS DECIDED FOR ROUND ').concat(roundNumber).concat(': CORRECT ANSWER WAS ').concat(arg).concat('\n'), (err) => {
 			if (err) throw err;
 			console.log('> Final answer logged as '.concat(arg));
 		});
 		lineNumber++;
 		//Process argument into several correct answers.
 		var answers = [];
-		for (var i = 0; i < arg.length; i++)
-		{
+		for (var i = 0; i < arg.length; i++) {
 			answers.push(arg.substring(i, i + 1));
 		}
 		console.log(answers);
 		//Process scores
 		var correctAnswers = 0;
 		var totalAnswers = 0;
-		for (const [player, guess] of Object.entries(guesses))
-		{
+		for (const [player, guess] of Object.entries(guesses)) {
 			//If the player isn't in the score table, add them.
-			if (scores[player] == null)
-			{
+			if (scores[player] == null) {
 				scores[player] = {};
 				scores[player]['score'] = 0;
 				scores[player]['streak'] = 0;
 			}
 			//Did the player get it right?
-			if (answers.indexOf(guess) != -1 || arg == '*')
-			{
+			if (answers.indexOf(guess) != -1 || arg == '*') {
 				scores[player]['score'] += basePoints;
 				const bonus = streakBonus * scores[player]['streak'];
 				scores[player]['score'] += bonus;
@@ -309,21 +269,17 @@ function onMessageHandler(target, context, msg, self)
 		updateLeaders();
 	}
 
-	else if (commandName.startsWith('!undofinal') && hasElevatedPermissions(context['username']))
-	{
-		if (!postFinal)
-		{
+	else if (commandName.startsWith('!undofinal') && hasElevatedPermissions(context['username'])) {
+		if (!postFinal) {
 			client.action(CHAT_CHANNEL, 'The !undofinal command is only usable at the end of a round following a !final, before the next !open.');
 			return;
 		}
 		postFinal = false;
-		fs.readFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber - 1).concat('.txt'), (err, data) =>
-		{
+		fs.readFile('scores-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber - 1).concat('.txt'), (err, data) => {
 			if (err) throw err;
 			scores = JSON.parse(data);
 			updateLeaders();
-			fs.appendFile('log.txt', String(lineNumber).concat('\tINCORRECT ANSWER LOGGED FOR ROUND ').concat(roundNumber).concat(': IGNORE PREVIOUS ANSWER AND USE NEXT INSTEAD\n'), (err) =>
-			{
+			fs.appendFile('log.txt', String(lineNumber).concat('\tINCORRECT ANSWER LOGGED FOR ROUND ').concat(roundNumber).concat(': IGNORE PREVIOUS ANSWER AND USE NEXT INSTEAD\n'), (err) => {
 				if (err) throw err;
 				console.log('> Undofinal command used.');
 			});
@@ -333,30 +289,24 @@ function onMessageHandler(target, context, msg, self)
 
 	}
 
-	else if (commandName.startsWith('!ping') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!ping') && hasElevatedPermissions(context['username'])) {
 		client.action(CHAT_CHANNEL, 'Pong!');
 		console.log('> Pong!');
 	}
 
-	else if (commandName.startsWith('!testcontroller') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!testcontroller') && hasElevatedPermissions(context['username'])) {
 		client.action(CHAT_CHANNEL, context['username'].concat(', you are a successfully-registered bot controller.'));
 	}
 
-	else if (commandName.startsWith('!basepoints') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!basepoints') && hasElevatedPermissions(context['username'])) {
 		var newValue = Number(commandName.substring(12));
-		if (isNaN(newValue))
-		{
+		if (isNaN(newValue)) {
 			client.action(CHAT_CHANNEL, 'Failed to parse command argument as a number.');
 		}
-		else
-		{
+		else {
 			basePoints = newValue;
 			client.action(CHAT_CHANNEL, 'Base value for correct questions is now '.concat(newValue));
-			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) =>
-			{
+			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) => {
 				if (err) throw err;
 				console.log('> Base point value changed.');
 			});
@@ -364,19 +314,15 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.startsWith('!streakpoints') && hasElevatedPermissions(context['username']))
-	{
+	else if (commandName.startsWith('!streakpoints') && hasElevatedPermissions(context['username'])) {
 		var newValue = Number(commandName.substring(14));
-		if (isNaN(newValue))
-		{
+		if (isNaN(newValue)) {
 			client.action(CHAT_CHANNEL, 'Failed to parse command argument as a number.');
 		}
-		else
-		{
+		else {
 			streakBonus = newValue;
 			client.action(CHAT_CHANNEL, 'Streak bonus value for correct questions is now '.concat(newValue));
-			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) =>
-			{
+			fs.appendFile('log.txt', String(lineNumber).concat('\tBASE POINT VALUE IS NOW ').concat(newValue).concat('\n'), (err) => {
 				if (err) throw err;
 				console.log('> Streak bonus point value changed.');
 			});
@@ -384,92 +330,71 @@ function onMessageHandler(target, context, msg, self)
 		}
 	}
 
-	else if (commandName.startsWith('!addcontroller') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!addcontroller') && context['display-name'] === BOT_CONTROLLER) {
 		var newController = commandName.substring(15);
 		addedControllers.push(newController);
 		console.log('> Added new controller: '.concat(newController));
 		client.action(CHAT_CHANNEL, 'Added new controller: '.concat(newController));
 	}
 
-	else if (commandName.startsWith('!removecontroller') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!removecontroller') && context['display-name'] === BOT_CONTROLLER) {
 		var newController = commandName.substring(18);
 		var index = addedControllers.indexOf(newController);
-		if (index > -1)
-		{
+		if (index > -1) {
 			addedControllers.splice(index, 1);
 			console.log('> Removed controller: '.concat(newController));
 			client.action(CHAT_CHANNEL, 'Removed controller: '.concat(newController));
 		}
-		else
-		{
+		else {
 			client.action(CHAT_CHANNEL, 'Couldn\'t find that user in the list of added controllers.');
 		}
 	}
 
-	else if (commandName.startsWith('!recoverguesses') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!recoverguesses') && context['display-name'] === BOT_CONTROLLER) {
 		console.log('> Used command recoverguesses');
 		listeningForGuesses = true;
 		guesses = {};
 		client.action(CHAT_CHANNEL, 'The bot has recovered from a crash or reboot in the middle of guessing. Unfortunately, this round\'s guesses could not be saved. IF YOU MADE A GUESS THIS ROUND, PLEASE SUBMIT IT AGAIN WITH !guess (number)');
-		fs.appendFile('log.txt', String(lineNumber).concat('\tRECOVERED BOT MID-GUESSING -- GUESSING OPEN -- USE GUESSES BOTH ABOVE AND BELOW THIS LINE\n'), (err) =>
-		{
+		fs.appendFile('log.txt', String(lineNumber).concat('\tRECOVERED BOT MID-GUESSING -- GUESSING OPEN -- USE GUESSES BOTH ABOVE AND BELOW THIS LINE\n'), (err) => {
 			if (err) throw err;
 		});
 		lineNumber++;
 	}
 
-	else if (commandName.startsWith('!recoverround') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!recoverround') && context['display-name'] === BOT_CONTROLLER) {
 		console.log('> Used command recoverround');
 		fs.readFile('guesses.txt', (err, data) => { if (err) throw err; guesses = JSON.parse(data); });
 		client.action(CHAT_CHANNEL, 'The bot has recovered from a crash or reboot in the middle of a match. Guesses were saved, however. This message is mostly to inform Mana that the guess recovery process succeeded.');
-		fs.appendFile('log.txt', String(lineNumber).concat('\tRECOVERED BOT AFTER GUESSING BUT BEFORE FINAL\n'), (err) =>
-		{
+		fs.appendFile('log.txt', String(lineNumber).concat('\tRECOVERED BOT AFTER GUESSING BUT BEFORE FINAL\n'), (err) => {
 			if (err) throw err;
 		});
 		lineNumber++;
 	}
 
-	else if (commandName.startsWith('!calcleaders') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!calcleaders') && context['display-name'] === BOT_CONTROLLER) {
 		console.log('> Used command calcleaders');
 		client.action(CHAT_CHANNEL, 'Rebuilding leader list.');
 		updateLeaders();
 	}
 
-	else if (commandName.startsWith('!debug') && context['display-name'] === BOT_CONTROLLER)
-	{
+	else if (commandName.startsWith('!debug') && context['display-name'] === BOT_CONTROLLER) {
 		console.log(guesses);
 		console.log(leaderNames);
 		console.log(leaderScores);
 	}
 }
 
-// Called every time the bot connects to Twitch chat
-function onConnectedHandler(addr, port)
-{
-	console.log('* Connected successfully to Twitch channel: '.concat(CHAT_CHANNEL));
-}
-
-function updateLeaders()
-{
+function updateLeaders() {
 	leaderNames = ['nobody1', 'nobody2', 'nobody3', 'nobody4', 'nobody5'];
 	leaderScores = [0, 0, 0, 0, 0];
 	leaderStreaks = [0, 0, 0, 0, 0];
-	for (const [player, scoreObj] of Object.entries(scores))
-	{
+	for (const [player, scoreObj] of Object.entries(scores)) {
 		const score = scoreObj['score'];
 		const streak = scoreObj['streak'];
-		for (var i = 0; i < 5; i++)
-		{
-			if (score > leaderScores[i])
-			{
+		for (var i = 0; i < 5; i++) {
+			if (score > leaderScores[i]) {
 				//Shift everyone else down 1
-				for (var j = 4; j > i; j--)
-				{
+				for (var j = 4; j > i; j--) {
 					leaderNames[j] = leaderNames[j - 1];
 					leaderScores[j] = leaderScores[j - 1];
 					leaderStreaks[j] = leaderStreaks[j - 1];
@@ -483,12 +408,10 @@ function updateLeaders()
 	}
 }
 
-function batchPostScores()
-{
+function batchPostScores() {
 	console.log('> Batch-posting score requests');
 	var outString = "";
-	for (const player of scoreRequests)
-	{
+	for (const player of scoreRequests) {
 		var score = 0;
 		var streak = 0;
 		if (scores[player] == null) //Player not in score table.
@@ -509,41 +432,4 @@ function batchPostScores()
 	}
 	client.action(CHAT_CHANNEL, outString);
 	scoreRequests = [];
-}
-
-function hasElevatedPermissions(user)
-{
-	if (user == BOT_CONTROLLER.toLowerCase())
-	{
-		return true;
-	}
-	if (addedControllers.includes(user))
-	{
-		return true;
-	}
-	return false;
-}
-
-function ConnectToTwitch(channel)
-{
-	// Define configuration options
-	const opts = {
-		identity: {
-			username: username,
-			password: password
-		},
-		channels: [
-			channel
-		]
-	};
-
-	// Create a client with our options
-	client = new tmi.client(opts);
-
-	// Register our event handlers (defined below)
-	client.on('message', onMessageHandler);
-	client.on('connected', onConnectedHandler);
-
-	// Connect to Twitch:
-	client.connect();
 }
