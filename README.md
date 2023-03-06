@@ -61,9 +61,9 @@ In the terminal for the bot, you can execute SQL queries into [predictions.db](d
 
 <code>get</code> will return a single item (the first item) from the query given.
 
-<code>all</code> will return all objects found in the query.
+<code>all</code> will return all items found in the query.
 
-<code>run</code> will execute the code and return a response object.
+<code>run</code> will execute the query and return a response.
 
 You can run the query by typing in something like <code>all SELECT * FROM guesses;</code> or <code>run INSERT INTO guesses VALUES ('25Pi25', -1000)</code>.
 
