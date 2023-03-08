@@ -9,7 +9,7 @@ dotenv.config();
 
 // Constants and Variables
 import config from './config.js';
-import { guessPhase, db } from './util.js';
+import { guessPhase, db, leaders } from './util.js';
 import commandList from './commands.js';
 let { addedControllers, basePoints, streakBonus } = config;
 const { BOT_NAME, CHAT_CHANNEL, BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP } = config;
@@ -44,6 +44,7 @@ global.client = new tmi.client({
 	},
 	channels: [CHAT_CHANNEL]
 });
+
 // Register our event handlers (defined below)
 client.on('message', (_, context, message, self) => {
 	if (self) return; // Ignore messages from the bot
@@ -83,42 +84,7 @@ rl.on('line', input => {
 
 // Called every time a message comes in
 function onMessageHandler(_, context, message, self) {
-
-
-	if (commandName.startsWith('!score')) {
-		/*
-		const player = context['username'];
-		var score = 0;
-		var streak = 0;
-		if (scores[player] == null) //Player not in score table.
-		{
-			console.log('> '.concat(player).concat(" asked for their score but they don't exist in the scoretable"));
-			//score = 0;
-			//streak = 0;
-		}
-		else //Player IS in scoretable
-		{
-			score = scores[player]["score"];
-			streak = scores[player]["streak"];
-			console.log('> '.concat(player).concat(" asked for their score, it is ").concat(score).concat( " and their streak is ").concat(streak));
-		}
-		client.action(CHAT_CHANNEL, "@".concat(player).concat(" Your score is ").concat(score).concat(" and your current streak is ").concat(streak));
-		*/
-		const player = context['username'];
-		console.log('> Score command used by '.concat(player));
-		scoreRequests.push(player);
-		if (scoreRequests.length == 1) //First request in a batch, so start the timer for batch posting.
-		{
-			scoreTimeoutFunc = setTimeout(batchPostScores, SCORE_REQUEST_BATCH_WAIT);
-		}
-		else if (scoreRequests.length >= MAX_SCORE_REQUESTS) //Batch is full, so post immediately and cancel the timer.
-		{
-			clearTimeout(scoreTimeoutFunc);
-			batchPostScores();
-		}
-	}
-
-	else if (commandName.startsWith('!unguess')) {
+	if (commandName.startsWith('!unguess')) {
 		var guesser = context['username'];
 		if (listeningForGuesses) {
 			guesses[guesser] = "";
@@ -382,9 +348,7 @@ function onMessageHandler(_, context, message, self) {
 	}
 
 	else if (commandName.startsWith('!debug') && context['display-name'] === BOT_CONTROLLER) {
-		console.log(guesses);
-		console.log(leaderNames);
-		console.log(leaderScores);
+		console.log(guesses, leaders);
 	}
 }
 
@@ -410,30 +374,4 @@ function updateLeaders() {
 			}
 		}
 	}
-}
-
-function batchPostScores() {
-	console.log('> Batch-posting score requests');
-	var outString = "";
-	for (const player of scoreRequests) {
-		var score = 0;
-		var streak = 0;
-		if (scores[player] == null) //Player not in score table.
-		{
-			//console.log('> '.concat(player).concat(" asked for their score but they don't exist in the scoretable"));
-			//score = 0;
-			//streak = 0;
-		}
-		else //Player IS in scoretable
-		{
-			score = scores[player]['score'];
-			streak = scores[player]['streak'];
-			//console.log('> '.concat(player).concat(" asked for their score, it is ").concat(score).concat(" and their streak is ").concat(streak));
-		}
-		outString = outString.concat('@').concat(player);
-		outString = outString.concat(' Your score is ').concat(score);
-		outString = outString.concat(' and your current streak is ').concat(streak).concat(' ||| ');
-	}
-	client.action(CHAT_CHANNEL, outString);
-	scoreRequests = [];
 }

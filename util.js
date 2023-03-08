@@ -17,7 +17,12 @@ export const guessPhase = {
 export const bot = {
     round: 0,
     currentGuessPhase: guessPhase.None,
-    question: ""
+    question: "",
+    scoreTimeout: () => {},
+    leaders: [],
+    updateLeaders() {
+        this.leaders = db.prepare("SELECT * FROM scores ORDER BY score LIMIT 5").all()
+    }
 }
 
 export const hasElevatedPermissions = user => hasControllerPermissions() || addedControllers.includes(user);
