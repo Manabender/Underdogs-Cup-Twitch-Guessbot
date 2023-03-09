@@ -17,9 +17,9 @@ export default function ({ username }) {
 function batchPostScores() {
     let outString = "";
     for (const username of scoreRequests) {
-        const { score, streak } = db.prepare("SELECT (score, streak) FROM scores WHERE username = ?").get(username);
-        if (!score) continue;
-        outString += `@${username} Your score is ${score} and your current streak is ${streak} ||| `
+        const info = db.prepare("SELECT (score, streak) FROM scores WHERE username = ?").get(username);
+        if (!info) continue;
+        outString += `@${username} Your score is ${info.score} and your current streak is ${info.streak} ||| `
     }
     client.action(CHAT_CHANNEL, outString);
     bot.scoreRequests = [];
