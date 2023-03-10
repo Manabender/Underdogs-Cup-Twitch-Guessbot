@@ -25,5 +25,10 @@ export const bot = {
     }
 }
 
+export const cooldown = {
+    leaders: true,
+    question: true
+}
+
 export const hasElevatedPermissions = user => hasControllerPermissions() || addedControllers.includes(user);
 export const hasControllerPermissions = user => user == BOT_CONTROLLER.toLowerCase();

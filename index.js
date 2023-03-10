@@ -9,7 +9,7 @@ dotenv.config();
 
 // Constants and Variables
 import config from './config.js';
-import { guessPhase, db, leaders } from './util.js';
+import { db, leaders } from './util.js';
 import commandList from './commands.js';
 let { addedControllers, basePoints, streakBonus } = config;
 const { BOT_NAME, CHAT_CHANNEL, BOT_CONTROLLER, MAX_SCORE_REQUESTS, SCORE_REQUEST_BATCH_WAIT, LEADERS_COOLDOWN_WAIT, QA_COOLDOWN_WAIT, INITIAL_TIMESTAMP } = config;
@@ -84,79 +84,8 @@ rl.on('line', input => {
 
 // Called every time a message comes in
 function onMessageHandler(_, context, message, self) {
-	if (commandName.startsWith('!unguess')) {
-		var guesser = context['username'];
-		if (listeningForGuesses) {
-			guesses[guesser] = "";
-			fs.appendFile('log.txt', String(lineNumber).concat('\t').concat(guesser).concat('\tcancel guess\n'), (err) => {
-				if (err) throw err;
-				console.log('> '.concat(guesser).concat(' unguessed '));
-			});
-			lineNumber++;
-		}
-		else {
-			console.log('> '.concat(guesser).concat(' tried to unguess ').concat(ans).concat(' but guessing isn\'t open right now'));
-		}
-	}
 
-	else if (commandName.startsWith('!leaders')) {
-		if (leadersAvailable) {
-			console.log('> Leaders command used');
-			var outString = '';
-			for (var i = 1; i <= 5; i++) {
-				outString = outString.concat(i).concat('. ');
-				outString = outString.concat(leaderNames[i - 1]).concat(': ');
-				outString = outString.concat(leaderScores[i - 1]).concat(', streak ');
-				outString = outString.concat(leaderStreaks[i - 1]).concat(' ||| ');
-			}
-			client.action(CHAT_CHANNEL, outString);
-			leadersAvailable = false;
-			setTimeout(function () { leadersAvailable = true; }, LEADERS_COOLDOWN_WAIT);
-		}
-		else {
-			console.log('> Leaders command used but currently on cooldown');
-		}
-	}
-
-	else if (commandName.startsWith('!question') || commandName.startsWith('!answers')) {
-		if (qaAvailable) {
-			console.log('> Question/Answers command used');
-			if (question == '') {
-				client.action(CHAT_CHANNEL, "No question has been logged this round! Is Mana slacking?");
-			}
-			else {
-				client.action(CHAT_CHANNEL, question);
-			}
-			qaAvailable = false;
-			setTimeout(function () { qaAvailable = true; }, QA_COOLDOWN_WAIT);
-		}
-		else {
-			console.log('> Question/Answers command used but currently on cooldown');
-		}
-	}
-
-	else if (commandName.startsWith('!close') && hasElevatedPermissions(context['username'])) {
-		listeningForGuesses = false;
-		postFinal = false;
-		client.action(CHAT_CHANNEL, 'Guessing is closed for round '.concat(roundNumber).concat('.'));
-		fs.writeFile('guesses.txt', JSON.stringify(guesses), (err) => //Write main guess file
-		{
-			if (err) throw err;
-			console.log('> Guess file written');
-		});
-		fs.writeFile('guesses-'.concat(INITIAL_TIMESTAMP).concat('-').concat(roundNumber).concat('.txt'), JSON.stringify(guesses), (err) => //Also write secondary record-keeping guess file
-		{
-			if (err) throw err;
-			console.log('> Guess file written');
-		});
-		fs.appendFile('log.txt', String(lineNumber).concat('\tGUESSING CLOSED FOR ROUND ').concat(roundNumber).concat(' -- IGNORE GUESSES PAST THIS POINT\n'), (err) => {
-			if (err) throw err;
-			console.log('> Guessing closed');
-		});
-		lineNumber++;
-	}
-
-	else if (commandName.startsWith('!cancelopen') && hasElevatedPermissions(context['username'])) {
+	if (commandName.startsWith('!cancelopen') && hasElevatedPermissions(context['username'])) {
 		if (listeningForGuesses) {
 			listeningForGuesses = false;
 			client.action(CHAT_CHANNEL, 'Guessing has been cancelled for round '.concat(roundNumber).concat('.'));

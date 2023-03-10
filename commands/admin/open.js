@@ -1,9 +1,10 @@
-import config from '../config.js';
+import config from '../../config.js';
 const { CHAT_CHANNEL } = config;
-import { bot, db, guessPhase } from '../util.js';
+import { bot, db, guessPhase } from '../../util.js';
 const { round, currentGuessPhase } = bot;
 
-export default function () {
+export default function ({ username }) {
+    if (!hasElevatedPermissions(username)) return;
     if (currentGuessPhase != guessPhase.None && currentGuessPhase != guessPhase.Final)
         return "You cannot start a new round now!";
 
