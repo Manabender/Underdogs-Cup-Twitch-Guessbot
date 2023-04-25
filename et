@@ -1,0 +1,14 @@
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{0}: checkout: moving from main to main
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{1}: rebase (abort): updating HEAD
+[33m1290d90[m HEAD@{2}: commit: basically have all the commands now
+[33m9e6a662[m HEAD@{3}: commit: added command and debug shit
+[33m21edca3[m HEAD@{4}: pull origin main: Fast-forward
+[33mf74d690[m HEAD@{5}: rebase (start): checkout e6eb3c7c7b8a580afd7bfaf3bcc688ae321340f7^
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{6}: reset: moving to HEAD
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{7}: rebase (finish): returning to refs/heads/main
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{8}: rebase (start): checkout refs/remotes/origin/main
+[33m52487bf[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m HEAD@{9}: revert: Revert "more commands wow!"
+[33mf6a101e[m HEAD@{10}: commit: more commands wow!
+[33m68a3466[m HEAD@{11}: checkout: moving from master to main
+[33m56f84c7[m[33m ([m[1;32mmaster[m[33m)[m HEAD@{12}: commit: leaders and unguess
+[33mf74d690[m HEAD@{13}: initial pull
