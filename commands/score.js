@@ -1,4 +1,4 @@
-import { bot, db, twitchChat } from '../util.js';
+import { bot, db } from '../util.js';
 const { scoreRequests } = bot;
 import config from '../config.js';
 const { SCORE_REQUEST_BATCH_WAIT, MAX_SCORE_REQUESTS, CHAT_CHANNEL } = config;
@@ -21,6 +21,6 @@ function batchPostScores() {
         if (!info) continue;
         outString += `@${username} Your score is ${info.score} and your current streak is ${info.streak} ||| `
     }
-    twitchChat(outString);
+    client.action(CHAT_CHANNEL, outString);
     bot.scoreRequests = [];
 }
