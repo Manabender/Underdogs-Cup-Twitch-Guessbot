@@ -9,10 +9,9 @@ dotenv.config();
 
 // Constants and Variables
 import config from './config.js';
-import { db, bot } from './util.js';
-const { leaders } = bot;
+import { db} from './util.js';
 import commandList from './commands.js';
-const { addedControllers, BOT_NAME, CHAT_CHANNEL, BOT_CONTROLLER, INITIAL_TIMESTAMP } = config;
+const { BOT_NAME, CHAT_CHANNEL } = config;
 
 // Creates a log in both the terminal and in the log.txt file
 function logAction(message = "ANONYMOUS ACTION") {
@@ -20,9 +19,6 @@ function logAction(message = "ANONYMOUS ACTION") {
     lineNumber++;
     console.log(`> ${message}`);
 }
-
-var guesses = {}; // Object of guesses. Indices are named with the guesser's username. Values are their guesses.
-var lineNumber = 0; // Line number to prepend every log.txt message with. This is useful for exporting the log to, say, Excel; with line numbers, we can tell when everything happened relative to everything else.
 
 // Create a client with our options
 global.client = new tmi.client({
@@ -68,26 +64,3 @@ rl.on('line', input => {
         console.log("Could not run SQL query. Was it correctly typed?")
     }
 });
-
-// Called every time a message comes in
-function onMessageHandler(_, context, message, self) {
-    if (commandName.startsWith('!recoverround') && context['display-name'] === BOT_CONTROLLER) {
-        console.log('> Used command recoverround');
-        fs.readFile('guesses.txt', (err, data) => { if (err) throw err; guesses = JSON.parse(data); });
-        client.action(CHAT_CHANNEL, 'The bot has recovered from a crash or reboot in the middle of a match. Guesses were saved, however. This message is mostly to inform Mana that the guess recovery process succeeded.');
-        fs.appendFile('log.txt', String(lineNumber).concat('\tRECOVERED BOT AFTER GUESSING BUT BEFORE FINAL\n'), (err) => {
-            if (err) throw err;
-        });
-        lineNumber++;
-    }
-
-    else if (commandName.startsWith('!calcleaders') && context['display-name'] === BOT_CONTROLLER) {
-        console.log('> Used command calcleaders');
-        client.action(CHAT_CHANNEL, 'Rebuilding leader list.');
-        bot.updateLeaders();
-    }
-
-    else if (commandName.startsWith('!debug') && context['display-name'] === BOT_CONTROLLER) {
-        console.log(guesses, leaders);
-    }
-}

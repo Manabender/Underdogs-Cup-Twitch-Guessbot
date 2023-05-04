@@ -1,7 +1,5 @@
-const debug = {
-    ping: 'debug/ping',
-    testcontroller: 'debug/testController'
-}
+import { bot, db, hasElevatedPermissions, twitchChat } from "./util.js";
+const { leaders } = bot;
 
 const adminCommands = {
     close: 'admin/close',
@@ -24,10 +22,20 @@ const commands = {
     leaders: 'leaders',
     question: 'question',
     answers: 'question',
-    ...debug,
     ...adminCommands,
     ...hostCommands
 }
 
+const shortCommands = {
+    ping: ({ username }) => hasElevatedPermissions(username) && twitchChat("Pong!"),
+    testcontroller: ({ username }) => hasElevatedPermissions(username) && twitchChat(`${username} is a successfully registered bot controller.`),
+    calcleaders: ({ username }) => {
+        if (!hasElevatedPermissions(username)) return;
+        client.action(CHAT_CHANNEL, 'Rebuilding leader list.');
+        bot.updateLeaders();
+    },
+    debug: ({ username }) => hasElevatedPermissions(username) && console.log(db.prepare("SELECT * FROM guesses").all(), leaders)
+}
+
 for (const key in commands) commands[key] = (await import(`./commands/${commands[key]}.js`))?.default;
-export default commands;
+export default { ...commands, ...shortCommands };

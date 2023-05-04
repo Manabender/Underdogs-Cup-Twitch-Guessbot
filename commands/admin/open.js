@@ -3,7 +3,7 @@ const { currentGuessPhase } = bot;
 
 export default function ({ username }) {
     if (!hasElevatedPermissions(username)) return;
-    if (currentGuessPhase != guessPhase.None && currentGuessPhase != guessPhase.Final)
+    if (currentGuessPhase != guessPhase.None)
         return "ROUND COULD NOT BE STARTED";
 
     const round = ++bot.round;

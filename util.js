@@ -1,4 +1,4 @@
-    import sqlite from 'better-sqlite3';
+import sqlite from 'better-sqlite3';
 import config from './config.js';
 const { addedControllers, CHAT_CHANNEL, BOT_CONTROLLER, databasePath } = config;
 
@@ -6,6 +6,7 @@ export const db = sqlite(databasePath);
 db.pragma('journal_mode = WAL');
 
 export const twitchChat = text => client.action(CHAT_CHANNEL, text);
+
 // Enums and variable for the guessing phase the bot is currently at
 export const guessPhase = {
     None: 0,
@@ -20,7 +21,7 @@ export const bot = {
     currentGuessPhase: guessPhase.None,
     question: "",
     leaders: [],
-    scoreTimeout: () => {},
+    scoreTimeout: function() {},
     updateLeaders() {
         this.leaders = db.prepare("SELECT * FROM scores ORDER BY score LIMIT 5").all()
     }

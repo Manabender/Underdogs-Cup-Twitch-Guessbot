@@ -5,6 +5,6 @@ export default function ({ username }) {
 
     bot.currentGuessPhase = guessPhase.None;
     bot.round--;
-    client.action(CHAT_CHANNEL, 'Guessing has been cancelled for round '.concat(roundNumber).concat('.'));
+    client.action(CHAT_CHANNEL, `Guessing has been cancelled for round ${roundNumber}.`);
     return "GUESSING CANCELLED - IGNORE MESSAGES ABOVE";
 }
