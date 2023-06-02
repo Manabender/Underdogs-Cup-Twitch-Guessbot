@@ -1,22 +1,26 @@
 {
   "name": "underdogs-cup-twitch-guessbot",
+  "type": "module",
   "version": "1.0.0",
   "description": "By default, each correct answer is worth 1000 points. Each correct answer also builds up your \"streak\", and you gain an extra 100 points times your streak for each correct answer. For example, if you answer 5 questions in a row correctly, they will be worth 1000, then 1100, then 1200, then 1300, then 1400. Any incorrect answer resets your streak to 0.",
-  "main": "twitchbot.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node twitchbot.js"
+    "start": "node index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Manabender/Underdogs-Cup-Twitch-Guessbot.git"
+    "url": "git+https://github.com/25Pi25/Underdogs-Cup-Twitch-Guessbot.git"
   },
   "author": "Manabender",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Manabender/Underdogs-Cup-Twitch-Guessbot/issues"
+    "url": "https://github.com/25Pi25/Underdogs-Cup-Twitch-Guessbot/issues"
   },
-  "homepage": "https://github.com/Manabender/Underdogs-Cup-Twitch-Guessbot#readme",
+  "homepage": "https://github.com/25Pi25/Underdogs-Cup-Twitch-Guessbot#readme",
   "dependencies": {
+    "better-sqlite3": "^8.1.0",
+    "dotenv": "^16.0.3",
+    "fs": "^0.0.1-security",
     "node-fetch": "^2.6.1",
     "tmi.js": "^1.8.3",
     "ws": "^7.4.5"

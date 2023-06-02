@@ -1,3 +1,5 @@
 node_modules
 *.txt
-credentials.js
+.env
+*.db
+*.sqlite
