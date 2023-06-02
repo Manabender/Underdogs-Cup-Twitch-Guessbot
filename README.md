@@ -70,6 +70,10 @@ You can run the query by typing in something like <code>all SELECT * FROM guesse
 ## Can I use this myself?
 Short answer: Sure!
 
-Longer answer: Using this bot requires a bit of technical know-how. Also, you won't be using my *bot*, so to speak, but my *code*. You will need to create your own twitch account for your instance my bot code to use and supply its credentials in a separate file. You'll also need to change a few things, like <code>BOT_CONTROLLER</code> and <code>CHAT_CHANNEL</code>. But, assuming you know how to use it, I don't mind if you do. It would be nice if you gave credit where credit is due, of course.
+Longer answer: Using this bot requires a bit of technical know-how. Also, you won't be using my *bot*, so to speak, but my *code*. You will need to create your own twitch account for your instance my bot code to use and supply its credentials in a separate file.
 
-Note that you will need a file named <code>scores.txt</code> in the folder that the script runs in, and it must contain a valid JSON, otherwise it will fail to launch properly. An empty JSON <code>{}</code> is sufficient. The script will update this file after every round.
+1. Create a .env file in the root to store your credentials.
+2. Go to [Twitch Chat Password Generator](https://twitchapps.com/tmi/) to get an OAuth key for your twitch channel.
+3. Paste the OAuth key into your .env, setting it as `OAUTH_KEY = (Your OAuth key)`
+4. Go to config.js and change the necessary channel names. (These will generally be the properties on the top)
+5. Run `npm i` in the terminal to install necessary dependencies.

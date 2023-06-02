@@ -9,11 +9,12 @@ dotenv.config();
 
 // Constants and Variables
 import config from './config.js';
-import { db} from './util.js';
+import { db } from './util.js';
 import commandList from './commands.js';
 const { BOT_NAME, CHAT_CHANNEL } = config;
 
 // Creates a log in both the terminal and in the log.txt file
+let lineNumber = 0;
 function logAction(message = "ANONYMOUS ACTION") {
     fs.appendFileSync('log.txt', `${lineNumber}\t${message}\n`);
     lineNumber++;
@@ -31,7 +32,8 @@ global.client = new tmi.client({
 
 // Register our event handlers (defined below)
 client.on('message', (_, context, message, self) => {
-    if (!message.startsWith("!") || self) return; // Ignore messages without the prefix & messages from the bot
+    // Ignore messages without the prefix & messages from the bot
+    if (!message.startsWith("!") || self) return;
 
     // Remove whitespace from chat message and create message/args to pass as parameters
     const args = message.substring(1).trim().split(" ");
@@ -45,7 +47,7 @@ client.on('message', (_, context, message, self) => {
         args,
         username: context.username
     });
-    logAction(response);
+    if (response) logAction(response);
 });
 
 client.on('connected', () => console.log(`* Connected successfully to Twitch channel: ${CHAT_CHANNEL}`));

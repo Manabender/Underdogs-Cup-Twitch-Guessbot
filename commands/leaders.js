@@ -1,6 +1,6 @@
 import config from '../config.js';
 const { LEADERS_COOLDOWN_WAIT } = config;
-import { bot, cooldown } from '../util.js';
+import { bot, cooldown, twitchChat } from '../util.js';
 
 export default function () {
     if (!cooldown.leaders)
@@ -9,8 +9,8 @@ export default function () {
     cooldown.leaders = false;
     const outString = bot.leaders.map((leader, index) => {
         const { username, score, streak } = leader;
-        return `${index}. ${username}: ${score}, streak ${streak}`
-    });
-    client.action(CHAT_CHANNEL, outString);
+        return `${index + 1}. ${username}: ${score}, streak ${streak}`;
+    }).join(" ||| ");
+    twitchChat(outString);
     setTimeout(() => cooldown.leaders = true, LEADERS_COOLDOWN_WAIT);
 }

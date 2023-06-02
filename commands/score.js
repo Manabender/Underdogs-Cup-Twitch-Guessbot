@@ -19,7 +19,7 @@ export default function ({ username }) {
 function batchPostScores() {
     let outString = "";
     for (const username of scoreRequests) {
-        const info = db.prepare("SELECT (score, streak) FROM scores WHERE username = ?").get(username);
+        const info = db.prepare("SELECT score, streak FROM scores WHERE username = '?'").get(username);
         if (!info) continue;
         outString += `@${username} Your score is ${info.score} and your current streak is ${info.streak} ||| `;
     }

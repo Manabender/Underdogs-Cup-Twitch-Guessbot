@@ -21,6 +21,7 @@ export const bot = {
     currentGuessPhase: guessPhase.None,
     question: "",
     leaders: [],
+    scoreRequests: [],
     scoreTimeout: function() {},
     updateLeaders() {
         this.leaders = db.prepare("SELECT * FROM scores ORDER BY score LIMIT 5").all()

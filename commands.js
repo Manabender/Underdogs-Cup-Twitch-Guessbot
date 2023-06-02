@@ -8,7 +8,8 @@ const adminCommands = {
     final: 'admin/final',
     setq: 'admin/setq',
     undofinal: 'admin/undoFinal',
-    basepoints: 'admin/basePoints'
+    basepoints: 'admin/basePoints',
+    streakpoints: 'admin/streakPoints'
 }
 
 const hostCommands = {
@@ -31,7 +32,7 @@ const shortCommands = {
     testcontroller: ({ username }) => hasElevatedPermissions(username) && twitchChat(`${username} is a successfully registered bot controller.`),
     calcleaders: ({ username }) => {
         if (!hasElevatedPermissions(username)) return;
-        client.action(CHAT_CHANNEL, 'Rebuilding leader list.');
+        twitchChat('Rebuilding leader list.')
         bot.updateLeaders();
     },
     debug: ({ username }) => hasElevatedPermissions(username) && console.log(db.prepare("SELECT * FROM guesses").all(), leaders)
