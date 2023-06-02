@@ -65,7 +65,7 @@ In the terminal for the bot, you can execute SQL queries into [predictions.db](d
 
 <code>run</code> will execute the query and return a response.
 
-You can run the query by typing in something like <code>all SELECT * FROM guesses;</code> or <code>run INSERT INTO guesses VALUES ('25Pi25', -1000)</code>.
+You can run the query by typing in something like <code>all SELECT * FROM guesses;</code> or <code>run INSERT INTO guesses VALUES ('Manabender', 1000)</code>.
 
 ## Can I use this myself?
 Short answer: Sure!
